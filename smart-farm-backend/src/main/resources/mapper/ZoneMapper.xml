@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.smartfarm.mapper.ZoneMapper">
+
+    <resultMap id="ZoneMap" type="com.example.smartfarm.entity.Zone">
+        <id column="id" property="id"/>
+        <result column="zone_name" property="zoneName"/>
+        <result column="crop_name" property="cropName"/>
+        <result column="manager_id" property="managerId"/>
+        <result column="manager_name" property="managerName"/>
+        <result column="status" property="status"/>
+        <result column="plant_date" property="plantDate"/>
+        <result column="area" property="area"/>
+        <result column="target_yield" property="targetYield"/>
+        <result column="zone_type" property="zoneType"/>
+        <result column="growth_stage" property="growthStage"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <select id="listAll" resultMap="ZoneMap">
+        SELECT z.*, u.real_name AS manager_name
+        FROM farm_zone z
+        LEFT JOIN sys_user u ON z.manager_id = u.id
+        ORDER BY z.id
+    </select>
+
+    <select id="listByManagerId" resultMap="ZoneMap">
+        SELECT z.*, u.real_name AS manager_name
+        FROM farm_zone z
+        LEFT JOIN sys_user u ON z.manager_id = u.id
+        WHERE z.manager_id = #{managerId}
+        ORDER BY z.id
+    </select>
+
+    <select id="getById" resultMap="ZoneMap">
+        SELECT z.*, u.real_name AS manager_name
+        FROM farm_zone z
+        LEFT JOIN sys_user u ON z.manager_id = u.id
+        WHERE z.id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO farm_zone(zone_name, crop_name, manager_id, status, plant_date, area, target_yield, zone_type, growth_stage)
+        VALUES(#{zoneName}, #{cropName}, #{managerId}, #{status}, #{plantDate}, #{area}, #{targetYield}, #{zoneType}, #{growthStage})
+    </insert>
+
+    <update id="update">
+        UPDATE farm_zone
+        <set>
+            <if test="zoneName != null">zone_name = #{zoneName},</if>
+            <if test="cropName != null">crop_name = #{cropName},</if>
+            <if test="managerId != null">manager_id = #{managerId},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="plantDate != null">plant_date = #{plantDate},</if>
+            <if test="area != null">area = #{area},</if>
+            <if test="targetYield != null">target_yield = #{targetYield},</if>
+            <if test="zoneType != null">zone_type = #{zoneType},</if>
+            <if test="growthStage != null">growth_stage = #{growthStage},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM farm_zone WHERE id = #{id}
+    </delete>
+
+</mapper>

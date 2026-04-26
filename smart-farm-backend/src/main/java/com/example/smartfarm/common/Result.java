@@ -11,9 +11,13 @@ public class Result {
     public static Result success(Object data) {
         Result r = new Result();
         r.setCode(200);
-        r.setMsg("登录成功");
+        r.setMsg("success");
         r.setData(data);
         return r;
+    }
+
+    public static Result success() {
+        return success(null);
     }
 
     public static Result error(String msg) {

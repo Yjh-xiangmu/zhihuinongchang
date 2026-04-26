@@ -1,0 +1,151 @@
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+.shell{background:var(--color-background-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;border:0.5px solid var(--color-border-tertiary)}
+.topbar{background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary);padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+.topbar-title{font-size:14px;font-weight:500;color:var(--color-text-primary)}
+.topbar-sub{font-size:12px;color:var(--color-text-tertiary)}
+.sidebar{width:120px;background:var(--color-background-primary);border-right:0.5px solid var(--color-border-tertiary);padding:12px 0;flex-shrink:0}
+.nav-item{padding:8px 14px;font-size:12px;color:var(--color-text-secondary);cursor:pointer;border-radius:0}
+.nav-item.active{background:var(--color-background-secondary);color:var(--color-text-primary);font-weight:500;border-left:2px solid #0F6E56}
+.main{flex:1;padding:16px;overflow:hidden}
+.layout{display:flex;gap:0}
+.stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.stat-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px 12px}
+.stat-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:4px}
+.stat-val{font-size:20px;font-weight:500;color:var(--color-text-primary)}
+.stat-hint{font-size:11px;margin-top:2px}
+.section-title{font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:8px;text-transform:none}
+.zone-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px}
+.zone-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px 12px;cursor:pointer}
+.zone-card:hover{border-color:var(--color-border-secondary)}
+.zone-name{font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:2px}
+.zone-crop{font-size:11px;color:var(--color-text-secondary);margin-bottom:6px}
+.progress-bar{height:4px;background:var(--color-background-secondary);border-radius:2px;overflow:hidden;margin-bottom:4px}
+.progress-fill{height:100%;border-radius:2px}
+.zone-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--color-text-tertiary)}
+.badge{display:inline-block;font-size:10px;padding:2px 6px;border-radius:20px;font-weight:500}
+.badge-warn{background:var(--color-background-warning);color:var(--color-text-warning)}
+.badge-ok{background:var(--color-background-success);color:var(--color-text-success)}
+.badge-info{background:var(--color-background-info);color:var(--color-text-info)}
+.alert-list{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);overflow:hidden}
+.alert-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:12px}
+.alert-row:last-child{border-bottom:none}
+.alert-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.alert-text{flex:1;color:var(--color-text-primary)}
+.alert-time{color:var(--color-text-tertiary);font-size:11px}
+</style>
+<div class="shell">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title">智慧农场管理系统</div>
+      <div class="topbar-sub">农场管理员 · 王建国</div>
+    </div>
+    <button style="font-size:12px;padding:5px 12px;" onclick="sendPrompt('帮我设计新增区域的表单页面')">+ 新建区域 ↗</button>
+  </div>
+  <div class="layout">
+    <div class="sidebar">
+      <div class="nav-item active">全场看板</div>
+      <div class="nav-item">种植区域</div>
+      <div class="nav-item">预警中心</div>
+      <div class="nav-item">产量报告</div>
+      <div class="nav-item">追溯查询</div>
+      <div class="nav-item">账号管理</div>
+      <div class="nav-item">AI 建议</div>
+    </div>
+    <div class="main">
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">种植区域</div>
+          <div class="stat-val">12</div>
+          <div class="stat-hint" style="color:var(--color-text-success)">9 生长中</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">今日任务完成</div>
+          <div class="stat-val">84%</div>
+          <div class="stat-hint" style="color:var(--color-text-secondary)">47 / 56 条</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">未处理异常</div>
+          <div class="stat-val" style="color:var(--color-text-warning)">3</div>
+          <div class="stat-hint" style="color:var(--color-text-warning)">需要关注</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">本月采收</div>
+          <div class="stat-val">2.4t</div>
+          <div class="stat-hint" style="color:var(--color-text-secondary)">目标 3.0t</div>
+        </div>
+      </div>
+
+      <div class="section-title">区域概览</div>
+      <div class="zone-grid">
+        <div class="zone-card" onclick="sendPrompt('A区大棚1号的详细数据和记录历史')">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="zone-name">A区 · 大棚1号</div>
+            <span class="badge badge-ok">正常</span>
+          </div>
+          <div class="zone-crop">西红柿 · 第42天</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:60%;background:#1D9E75"></div></div>
+          <div class="zone-meta"><span>负责人：李明</span><span>3人</span></div>
+        </div>
+        <div class="zone-card" onclick="sendPrompt('B区露天2号有什么异常情况？')">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="zone-name">B区 · 露天2号</div>
+            <span class="badge badge-warn">异常</span>
+          </div>
+          <div class="zone-crop">生菜 · 第18天</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:25%;background:#EF9F27"></div></div>
+          <div class="zone-meta"><span>负责人：张芳</span><span>2人</span></div>
+        </div>
+        <div class="zone-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="zone-name">C区 · 温室3号</div>
+            <span class="badge badge-info">采收中</span>
+          </div>
+          <div class="zone-crop">黄瓜 · 第75天</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:95%;background:#378ADD"></div></div>
+          <div class="zone-meta"><span>负责人：陈伟</span><span>4人</span></div>
+        </div>
+        <div class="zone-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="zone-name">D区 · 大棚4号</div>
+            <span class="badge badge-ok">正常</span>
+          </div>
+          <div class="zone-crop">辣椒 · 第31天</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:43%;background:#1D9E75"></div></div>
+          <div class="zone-meta"><span>负责人：刘洋</span><span>2人</span></div>
+        </div>
+        <div class="zone-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="zone-name">E区 · 露天5号</div>
+            <span class="badge badge-warn">记录超期</span>
+          </div>
+          <div class="zone-crop">白菜 · 第12天</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:15%;background:#EF9F27"></div></div>
+          <div class="zone-meta"><span>负责人：赵敏</span><span>2人</span></div>
+        </div>
+        <div class="zone-card" style="background:var(--color-background-secondary);border-style:dashed;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="sendPrompt('帮我设计新增区域的表单页面')">
+          <span style="font-size:12px;color:var(--color-text-tertiary)">+ 添加区域</span>
+        </div>
+      </div>
+
+      <div class="section-title">最新预警</div>
+      <div class="alert-list">
+        <div class="alert-row">
+          <div class="alert-dot" style="background:var(--color-text-danger)"></div>
+          <div class="alert-text">B区露天2号 · 员工上报疑似叶斑病，待处理</div>
+          <span class="alert-time">10分钟前</span>
+        </div>
+        <div class="alert-row">
+          <div class="alert-dot" style="background:var(--color-text-warning)"></div>
+          <div class="alert-text">E区露天5号 · 超过48小时未提交生长记录</div>
+          <span class="alert-time">2小时前</span>
+        </div>
+        <div class="alert-row">
+          <div class="alert-dot" style="background:var(--color-text-warning)"></div>
+          <div class="alert-text">C区温室3号 · 采收进度落后计划12%</div>
+          <span class="alert-time">昨天</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

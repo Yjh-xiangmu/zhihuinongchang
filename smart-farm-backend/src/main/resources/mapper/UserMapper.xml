@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.smartfarm.mapper.UserMapper">
+
+    <resultMap id="UserMap" type="com.example.smartfarm.entity.User">
+        <id column="id" property="id"/>
+        <result column="username" property="username"/>
+        <result column="password" property="password"/>
+        <result column="real_name" property="realName"/>
+        <result column="role" property="role"/>
+    </resultMap>
+
+    <select id="listAll" resultMap="UserMap">
+        SELECT id, username, real_name, role, create_time FROM sys_user ORDER BY id
+    </select>
+
+    <select id="listByRole" resultMap="UserMap">
+        SELECT id, username, real_name, role FROM sys_user WHERE role = #{role}
+    </select>
+
+    <select id="getById" resultMap="UserMap">
+        SELECT id, username, real_name, role FROM sys_user WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_user(username, password, real_name, role)
+        VALUES(#{username}, #{password}, #{realName}, #{role})
+    </insert>
+
+    <update id="update">
+        UPDATE sys_user
+        <set>
+            <if test="username != null">username = #{username},</if>
+            <if test="password != null and password != ''">password = #{password},</if>
+            <if test="realName != null">real_name = #{realName},</if>
+            <if test="role != null">role = #{role},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM sys_user WHERE id = #{id}
+    </delete>
+
+</mapper>
