@@ -1,0 +1,36 @@
+:root {
+    /* 基础配色 */
+    --color-bg-body: #f2f3f5;
+    --color-bg-surface: #ffffff;
+    --color-bg-hover: #f7f8fa;
+    --color-text-primary: #1d2129;
+    --color-text-regular: #4e5969;
+    --color-text-muted: #86909c;
+    --color-border: #e5e6eb;
+
+    /* 品牌色 */
+    --color-primary: #1D9E75;
+    --color-primary-hover: #14805e;
+
+    /* 圆角与阴影 */
+    --radius-md: 6px;
+    --radius-lg: 12px;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+
+    /* 动画过渡 */
+    --transition: all 0.25s cubic-bezier(0.34, 0.69, 0.1, 1);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--color-bg-body);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+}
