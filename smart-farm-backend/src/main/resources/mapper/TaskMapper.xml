@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.smartfarm.mapper.TaskMapper">
+
+    <resultMap id="TaskMap" type="com.example.smartfarm.entity.Task">
+        <id column="id" property="id"/>
+        <result column="zone_id" property="zoneId"/>
+        <result column="zone_name" property="zoneName"/>
+        <result column="task_name" property="taskName"/>
+        <result column="task_type" property="taskType"/>
+        <result column="description" property="description"/>
+        <result column="assignee_id" property="assigneeId"/>
+        <result column="assignee_name" property="assigneeName"/>
+        <result column="creator_id" property="creatorId"/>
+        <result column="row_no" property="rowNo"/>
+        <result column="deadline" property="deadline"/>
+        <result column="status" property="status"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <select id="listByZoneId" resultMap="TaskMap">
+        SELECT t.*, u.real_name AS assignee_name, z.zone_name
+        FROM farm_task t
+        LEFT JOIN sys_user u ON t.assignee_id = u.id
+        LEFT JOIN farm_zone z ON t.zone_id = z.id
+        WHERE t.zone_id = #{zoneId}
+        ORDER BY t.create_time DESC
+    </select>
+
+    <select id="listByAssigneeId" resultMap="TaskMap">
+        SELECT t.*, u.real_name AS assignee_name, z.zone_name
+        FROM farm_task t
+        LEFT JOIN sys_user u ON t.assignee_id = u.id
+        LEFT JOIN farm_zone z ON t.zone_id = z.id
+        WHERE t.assignee_id = #{assigneeId}
+        ORDER BY t.deadline ASC
+    </select>
+
+    <select id="listByZoneIds" resultMap="TaskMap">
+        SELECT t.*, u.real_name AS assignee_name, z.zone_name
+        FROM farm_task t
+        LEFT JOIN sys_user u ON t.assignee_id = u.id
+        LEFT JOIN farm_zone z ON t.zone_id = z.id
+        WHERE t.zone_id IN
+        <foreach collection="zoneIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY t.create_time DESC
+    </select>
+
+    <select id="getById" resultMap="TaskMap">
+        SELECT t.*, u.real_name AS assignee_name, z.zone_name
+        FROM farm_task t
+        LEFT JOIN sys_user u ON t.assignee_id = u.id
+        LEFT JOIN farm_zone z ON t.zone_id = z.id
+        WHERE t.id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO farm_task(zone_id, task_name, task_type, description, assignee_id, creator_id, row_no, deadline, status)
+        VALUES(#{zoneId}, #{taskName}, #{taskType}, #{description}, #{assigneeId}, #{creatorId}, #{rowNo}, #{deadline}, #{status})
+    </insert>
+
+    <update id="update">
+        UPDATE farm_task
+        <set>
+            <if test="taskName != null">task_name = #{taskName},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="assigneeId != null">assignee_id = #{assigneeId},</if>
+            <if test="deadline != null">deadline = #{deadline},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM farm_task WHERE id = #{id}
+    </delete>
+
+    <select id="countByZoneIdAndStatus" resultType="int">
+        SELECT COUNT(*) FROM farm_task WHERE zone_id = #{zoneId} AND status = #{status}
+    </select>
+
+</mapper>

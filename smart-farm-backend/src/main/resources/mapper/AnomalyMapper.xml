@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.smartfarm.mapper.AnomalyMapper">
+
+    <resultMap id="AnomalyMap" type="com.example.smartfarm.entity.Anomaly">
+        <id column="id" property="id"/>
+        <result column="zone_id" property="zoneId"/>
+        <result column="zone_name" property="zoneName"/>
+        <result column="reporter_id" property="reporterId"/>
+        <result column="reporter_name" property="reporterName"/>
+        <result column="anomaly_type" property="anomalyType"/>
+        <result column="description" property="description"/>
+        <result column="images" property="images"/>
+        <result column="status" property="status"/>
+        <result column="handler_id" property="handlerId"/>
+        <result column="handle_note" property="handleNote"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="listAll" resultMap="AnomalyMap">
+        SELECT a.*, u.real_name AS reporter_name, z.zone_name
+        FROM farm_anomaly a
+        LEFT JOIN sys_user u ON a.reporter_id = u.id
+        LEFT JOIN farm_zone z ON a.zone_id = z.id
+        ORDER BY a.create_time DESC
+    </select>
+
+    <select id="listByZoneId" resultMap="AnomalyMap">
+        SELECT a.*, u.real_name AS reporter_name, z.zone_name
+        FROM farm_anomaly a
+        LEFT JOIN sys_user u ON a.reporter_id = u.id
+        LEFT JOIN farm_zone z ON a.zone_id = z.id
+        WHERE a.zone_id = #{zoneId}
+        ORDER BY a.create_time DESC
+    </select>
+
+    <select id="listByZoneIds" resultMap="AnomalyMap">
+        SELECT a.*, u.real_name AS reporter_name, z.zone_name
+        FROM farm_anomaly a
+        LEFT JOIN sys_user u ON a.reporter_id = u.id
+        LEFT JOIN farm_zone z ON a.zone_id = z.id
+        WHERE a.zone_id IN
+        <foreach collection="zoneIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY a.create_time DESC
+    </select>
+
+    <select id="listByReporterId" resultMap="AnomalyMap">
+        SELECT a.*, u.real_name AS reporter_name, z.zone_name
+        FROM farm_anomaly a
+        LEFT JOIN sys_user u ON a.reporter_id = u.id
+        LEFT JOIN farm_zone z ON a.zone_id = z.id
+        WHERE a.reporter_id = #{reporterId}
+        ORDER BY a.create_time DESC
+    </select>
+
+    <select id="getById" resultMap="AnomalyMap">
+        SELECT a.*, u.real_name AS reporter_name, z.zone_name
+        FROM farm_anomaly a
+        LEFT JOIN sys_user u ON a.reporter_id = u.id
+        LEFT JOIN farm_zone z ON a.zone_id = z.id
+        WHERE a.id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO farm_anomaly(zone_id, reporter_id, anomaly_type, description, images, status)
+        VALUES(#{zoneId}, #{reporterId}, #{anomalyType}, #{description}, #{images}, #{status})
+    </insert>
+
+    <update id="update">
+        UPDATE farm_anomaly
+        <set>
+            <if test="status != null">status = #{status},</if>
+            <if test="handlerId != null">handler_id = #{handlerId},</if>
+            <if test="handleNote != null">handle_note = #{handleNote},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+</mapper>

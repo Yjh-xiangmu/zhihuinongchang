@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.smartfarm.mapper.FarmRecordMapper">
+
+    <resultMap id="RecordMap" type="com.example.smartfarm.entity.FarmRecord">
+        <id column="id" property="id"/>
+        <result column="task_id" property="taskId"/>
+        <result column="zone_id" property="zoneId"/>
+        <result column="zone_name" property="zoneName"/>
+        <result column="worker_id" property="workerId"/>
+        <result column="worker_name" property="workerName"/>
+        <result column="record_type" property="recordType"/>
+        <result column="content" property="content"/>
+        <result column="images" property="images"/>
+        <result column="audit_status" property="auditStatus"/>
+        <result column="reject_reason" property="rejectReason"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <select id="listByZoneId" resultMap="RecordMap">
+        SELECT r.*, u.real_name AS worker_name, z.zone_name
+        FROM farm_record r
+        LEFT JOIN sys_user u ON r.worker_id = u.id
+        LEFT JOIN farm_zone z ON r.zone_id = z.id
+        WHERE r.zone_id = #{zoneId}
+        ORDER BY r.create_time DESC
+    </select>
+
+    <select id="listByZoneIds" resultMap="RecordMap">
+        SELECT r.*, u.real_name AS worker_name, z.zone_name
+        FROM farm_record r
+        LEFT JOIN sys_user u ON r.worker_id = u.id
+        LEFT JOIN farm_zone z ON r.zone_id = z.id
+        WHERE r.zone_id IN
+        <foreach collection="zoneIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY r.create_time DESC
+    </select>
+
+    <select id="listPendingByZoneId" resultMap="RecordMap">
+        SELECT r.*, u.real_name AS worker_name, z.zone_name
+        FROM farm_record r
+        LEFT JOIN sys_user u ON r.worker_id = u.id
+        LEFT JOIN farm_zone z ON r.zone_id = z.id
+        WHERE r.zone_id = #{zoneId} AND r.audit_status = 'PENDING'
+        ORDER BY r.create_time DESC
+    </select>
+
+    <select id="listByWorkerId" resultMap="RecordMap">
+        SELECT r.*, u.real_name AS worker_name, z.zone_name
+        FROM farm_record r
+        LEFT JOIN sys_user u ON r.worker_id = u.id
+        LEFT JOIN farm_zone z ON r.zone_id = z.id
+        WHERE r.worker_id = #{workerId}
+        ORDER BY r.create_time DESC
+    </select>
+
+    <select id="listByZoneIdAndTaskId" resultMap="RecordMap">
+        SELECT r.*, u.real_name AS worker_name
+        FROM farm_record r
+        LEFT JOIN sys_user u ON r.worker_id = u.id
+        WHERE r.zone_id = #{zoneId} AND r.task_id = #{taskId}
+    </select>
+
+    <select id="getById" resultMap="RecordMap">
+        SELECT r.*, u.real_name AS worker_name, z.zone_name
+        FROM farm_record r
+        LEFT JOIN sys_user u ON r.worker_id = u.id
+        LEFT JOIN farm_zone z ON r.zone_id = z.id
+        WHERE r.id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO farm_record(task_id, zone_id, worker_id, record_type, content, images, audit_status)
+        VALUES(#{taskId}, #{zoneId}, #{workerId}, #{recordType}, #{content}, #{images}, #{auditStatus})
+    </insert>
+
+    <update id="updateAuditStatus">
+        UPDATE farm_record SET audit_status = #{auditStatus}, reject_reason = #{rejectReason}
+        WHERE id = #{id}
+    </update>
+
+</mapper>

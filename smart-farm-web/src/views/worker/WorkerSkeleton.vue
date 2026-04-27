@@ -1,21 +1,22 @@
 <template>
   <div class="shell">
     <div class="topbar">
-      <div>
-        <div class="topbar-title">智慧农场 · 工作端</div>
-        <div class="topbar-sub">员工 · 小王 · A区大棚1号</div>
+      <div class="topbar-left">
+        <div class="logo-dot"></div>
+        <div>
+          <div class="topbar-title">智慧农场 · 工作端</div>
+          <div class="topbar-sub">员工 · {{ userInfo.realName }}</div>
+        </div>
       </div>
-      <button class="logout-btn" @click="$router.push('/')">退出</button>
+      <button class="logout-btn" @click="logout">退出</button>
     </div>
-
     <div class="layout">
       <div class="sidebar">
-        <div class="nav-item active">今日任务</div>
-        <div class="nav-item">生长记录</div>
-        <div class="nav-item">异常上报</div>
-        <div class="nav-item">个人消息</div>
+        <router-link class="nav-item" to="/worker/tasks"    active-class="active">今日任务</router-link>
+        <router-link class="nav-item" to="/worker/records"  active-class="active">我的记录</router-link>
+        <router-link class="nav-item" to="/worker/anomaly"  active-class="active">上报异常</router-link>
+        <router-link class="nav-item" to="/worker/messages" active-class="active">消息通知</router-link>
       </div>
-
       <div class="main">
         <router-view></router-view>
       </div>
@@ -23,20 +24,28 @@
   </div>
 </template>
 
-<style scoped>
-.shell { height: 100vh; display: flex; flex-direction: column; }
-.topbar { background: #fff; border-bottom: 0.5px solid #eee; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
-.topbar-title { font-size: 14px; font-weight: 500; }
-.topbar-sub { font-size: 11px; color: #666; }
-.layout { display: flex; flex: 1; }
-.sidebar { width: 120px; background: #fff; border-right: 0.5px solid #eee; padding: 12px 0; }
-.nav-item { padding: 10px 16px; font-size: 12px; color: #5f6368; cursor: pointer; }
-.nav-item.active {
-  background: #e1f5ee;
-  color: #1D9E75;
-  font-weight: 500;
-  border-left: 2px solid #1D9E75;
+<script setup>
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+function logout() {
+  localStorage.removeItem('userInfo')
+  router.push('/')
 }
-.main { flex: 1; padding: 16px; background: #fdfdfd; overflow-y: auto; }
-.logout-btn { font-size: 11px; padding: 3px 8px; cursor: pointer; border: 0.5px solid #ddd; background: #fff; border-radius: 4px; }
+</script>
+
+<style scoped>
+.shell { height:100vh; display:flex; flex-direction:column; overflow:hidden; background:var(--color-bg-body); }
+.topbar { background:#fff; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 1px 4px rgba(0,0,0,0.06); z-index:10; flex-shrink:0; }
+.topbar-left { display:flex; align-items:center; gap:12px; }
+.logo-dot { width:32px; height:32px; background:var(--color-primary); border-radius:8px; flex-shrink:0; }
+.topbar-title { font-size:15px; font-weight:600; color:var(--color-text-primary); }
+.topbar-sub { font-size:12px; color:var(--color-text-muted); }
+.logout-btn { font-size:12px; padding:6px 14px; cursor:pointer; border:1px solid var(--color-border); background:#fff; color:var(--color-text-regular); border-radius:var(--radius-md); }
+.layout { display:flex; flex:1; overflow:hidden; }
+.sidebar { width:110px; background:#fff; padding:12px 8px; flex-shrink:0; border-right:1px solid var(--color-border); display:flex; flex-direction:column; gap:2px; }
+.nav-item { display:block; padding:10px 14px; font-size:13px; color:var(--color-text-regular); cursor:pointer; border-radius:var(--radius-md); text-decoration:none; transition:var(--transition); }
+.nav-item:hover { background:var(--color-bg-hover); }
+.nav-item.active { background:#e8f5f0; color:var(--color-primary); font-weight:600; }
+.main { flex:1; padding:20px 24px; overflow-y:auto; }
 </style>

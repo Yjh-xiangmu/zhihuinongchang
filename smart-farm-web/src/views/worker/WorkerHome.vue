@@ -1,6 +1,390 @@
 <template>
-  <div class="home">
-    <h1>管理员工作台</h1>
-    <p>这里将展示全场的数据概览图表...</p>
+  <div class="worker-home">
+
+    <!-- 任务区 -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">今日任务</span>
+        <span class="badge badge-info">{{ pendingTasks.length }} 待办</span>
+      </div>
+      <div v-if="tasks.length === 0" class="empty-tip">暂无任务，等待负责人派发</div>
+      <div class="task-list">
+        <div v-for="t in tasks" :key="t.id" class="task-card">
+          <div class="task-card-top">
+            <div>
+              <div class="task-name">{{ t.taskName }}</div>
+              <div class="task-zone">{{ t.zoneName }} {{ t.rowNo ? '· ' + t.rowNo : '' }}</div>
+            </div>
+            <span :class="['badge', taskStatusBadge(t.status)]">{{ taskStatusLabel(t.status) }}</span>
+          </div>
+          <div class="task-footer">
+            <span class="task-time">截止：{{ formatDateTime(t.deadline) }}</span>
+            <button
+              v-if="t.status === 'PENDING'"
+              class="btn-submit"
+              @click="openRecordForm(t)"
+            >
+              提交记录
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 消息通知 -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">消息通知</span>
+        <button v-if="notifications.length > 0" class="btn-readall" @click="markAllRead">全部已读</button>
+      </div>
+      <div v-if="notifications.length === 0" class="empty-tip">暂无消息</div>
+      <div class="notif-list">
+        <div
+          v-for="n in notifications.slice(0, 8)"
+          :key="n.id"
+          :class="['notif-row', { unread: n.isRead === 0 }]"
+          @click="markRead(n)"
+        >
+          <div :class="['notif-dot', notifDotColor(n.type)]"></div>
+          <div class="notif-body">
+            <div class="notif-title">{{ n.title }}</div>
+            <div class="notif-content">{{ n.content }}</div>
+          </div>
+          <div class="notif-time">{{ formatDateTime(n.createTime) }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 我的历史记录 -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-title">历史提交记录</span>
+      </div>
+      <div v-if="myRecords.length === 0" class="empty-tip">暂未提交过记录</div>
+      <div class="record-list">
+        <div v-for="r in myRecords.slice(0, 5)" :key="r.id" class="record-row">
+          <div class="record-info">
+            <span class="record-type">{{ recordTypeLabel(r.recordType) }}</span>
+            <span class="record-zone">{{ r.zoneName }}</span>
+          </div>
+          <div class="record-content">{{ r.content }}</div>
+          <span :class="['badge', auditBadge(r.auditStatus)]">{{ auditLabel(r.auditStatus) }}</span>
+          <span class="record-time">{{ formatDateTime(r.createTime) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 提交记录弹窗 -->
+    <div v-if="showRecordForm" class="modal-mask" @click.self="showRecordForm = false">
+      <div class="modal-box">
+        <div class="modal-title">提交任务记录</div>
+        <div class="modal-task-info">任务：{{ currentTask?.taskName }}</div>
+
+        <div class="form-item">
+          <label>记录类型</label>
+          <select v-model="newRecord.recordType">
+            <option value="GROWTH">生长记录</option>
+            <option value="WATER">浇水记录</option>
+            <option value="FERTILIZER">施肥记录</option>
+            <option value="HARVEST">采收记录</option>
+          </select>
+        </div>
+
+        <!-- 生长记录的专用字段 -->
+        <template v-if="newRecord.recordType === 'GROWTH'">
+          <div class="form-row">
+            <div class="form-item half">
+              <label>平均株高 (cm)</label>
+              <input v-model="growthForm.plantHeight" type="number" placeholder="如：45" />
+            </div>
+            <div class="form-item half">
+              <label>生长状态</label>
+              <select v-model="growthForm.growth">
+                <option value="优">优</option>
+                <option value="良">良</option>
+                <option value="中">中</option>
+                <option value="差">差</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-item">
+            <label>叶色</label>
+            <div class="radio-row">
+              <span
+                v-for="opt in ['正常', '偏黄', '偏深', '其他']"
+                :key="opt"
+                :class="['radio-opt', { sel: growthForm.leafColor === opt }]"
+                @click="growthForm.leafColor = opt"
+              >{{ opt }}</span>
+            </div>
+          </div>
+        </template>
+
+        <!-- 施肥记录 -->
+        <template v-if="newRecord.recordType === 'FERTILIZER'">
+          <div class="form-item">
+            <label>施肥用量</label>
+            <input v-model="fertilizerForm.amount" placeholder="如：20kg" />
+          </div>
+        </template>
+
+        <div class="form-item">
+          <label>备注（选填）</label>
+          <textarea v-model="remarkText" placeholder="其他补充说明..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="showRecordForm = false">取消</button>
+          <button class="btn-confirm btn-green" @click="submitRecord" :disabled="submitting">
+            {{ submitting ? '提交中...' : '确认提交' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 上报异常按钮（悬浮） -->
+    <button class="fab-report" @click="showAnomalyForm = true">+ 上报异常</button>
+
+    <!-- 上报异常弹窗 -->
+    <div v-if="showAnomalyForm" class="modal-mask" @click.self="showAnomalyForm = false">
+      <div class="modal-box">
+        <div class="modal-title">上报异常问题</div>
+        <div class="form-item">
+          <label>异常类型 *</label>
+          <select v-model="newAnomaly.anomalyType">
+            <option value="PEST">病虫害</option>
+            <option value="DEVICE">设备损坏</option>
+            <option value="GROWTH">生长异常</option>
+            <option value="OTHER">其他</option>
+          </select>
+        </div>
+        <div class="form-item">
+          <label>区域ID *</label>
+          <input v-model="newAnomaly.zoneId" type="number" placeholder="输入发现问题的区域ID" />
+        </div>
+        <div class="form-item">
+          <label>问题描述 *</label>
+          <textarea v-model="newAnomaly.description" placeholder="详细描述发现的问题..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="showAnomalyForm = false">取消</button>
+          <button class="btn-confirm btn-green" @click="submitAnomaly">确认上报</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
+
+<script setup>
+import { ref, computed, onMounted, reactive } from 'vue'
+import { taskApi, recordApi, anomalyApi, notificationApi } from '@/api.js'
+
+const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+const workerId = userInfo.id
+
+const tasks = ref([])
+const notifications = ref([])
+const myRecords = ref([])
+
+const showRecordForm = ref(false)
+const showAnomalyForm = ref(false)
+const currentTask = ref(null)
+const submitting = ref(false)
+const remarkText = ref('')
+
+const newRecord = reactive({ recordType: 'GROWTH', taskId: null, zoneId: null, workerId: workerId })
+const growthForm = reactive({ plantHeight: '', leafColor: '正常', growth: '良' })
+const fertilizerForm = reactive({ amount: '' })
+const newAnomaly = reactive({ anomalyType: 'PEST', zoneId: null, description: '', reporterId: workerId })
+
+onMounted(async () => {
+  await loadTasks()
+  await loadNotifications()
+  await loadMyRecords()
+})
+
+async function loadTasks() {
+  try {
+    const res = await taskApi.listByWorker(workerId)
+    if (res.data.code === 200) tasks.value = res.data.data || []
+  } catch (e) { console.error(e) }
+}
+
+async function loadNotifications() {
+  try {
+    const res = await notificationApi.list(workerId)
+    if (res.data.code === 200) notifications.value = res.data.data || []
+  } catch (e) { console.error(e) }
+}
+
+async function loadMyRecords() {
+  try {
+    const res = await recordApi.listByWorker(workerId)
+    if (res.data.code === 200) myRecords.value = res.data.data || []
+  } catch (e) { console.error(e) }
+}
+
+function openRecordForm(task) {
+  currentTask.value = task
+  newRecord.taskId = task.id
+  newRecord.zoneId = task.zoneId
+  newRecord.recordType = 'GROWTH'
+  remarkText.value = ''
+  showRecordForm.value = true
+}
+
+async function submitRecord() {
+  submitting.value = true
+  try {
+    // 根据类型拼接 content
+    let content = ''
+    if (newRecord.recordType === 'GROWTH') {
+      content = JSON.stringify({
+        plant_height: growthForm.plantHeight,
+        leaf_color: growthForm.leafColor,
+        growth: growthForm.growth,
+        remark: remarkText.value
+      })
+    } else if (newRecord.recordType === 'FERTILIZER') {
+      content = JSON.stringify({ amount: fertilizerForm.amount, remark: remarkText.value })
+    } else {
+      content = JSON.stringify({ remark: remarkText.value })
+    }
+
+    await recordApi.add({ ...newRecord, content })
+    showRecordForm.value = false
+    await loadTasks()
+    await loadMyRecords()
+  } catch (e) {
+    alert('提交失败，请检查后端')
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function submitAnomaly() {
+  if (!newAnomaly.description || !newAnomaly.zoneId) { alert('请填写区域ID和问题描述'); return }
+  try {
+    await anomalyApi.add({ ...newAnomaly })
+    showAnomalyForm.value = false
+    alert('上报成功，负责人将尽快处理')
+  } catch (e) { alert('上报失败') }
+}
+
+async function markRead(n) {
+  if (n.isRead === 1) return
+  try {
+    await notificationApi.markRead(n.id)
+    n.isRead = 1
+  } catch (e) {}
+}
+
+async function markAllRead() {
+  try {
+    await notificationApi.markAllRead(workerId)
+    notifications.value.forEach(n => n.isRead = 1)
+  } catch (e) {}
+}
+
+const pendingTasks = computed(() => tasks.value.filter(t => t.status === 'PENDING'))
+
+function taskStatusLabel(s) {
+  return { PENDING: '待办', DONE: '已完成', LATE: '超时' }[s] || s
+}
+function taskStatusBadge(s) {
+  return { PENDING: 'badge-info', DONE: 'badge-ok', LATE: 'badge-danger' }[s] || ''
+}
+function recordTypeLabel(t) {
+  return { GROWTH: '生长记录', WATER: '浇水', FERTILIZER: '施肥', HARVEST: '采收' }[t] || t
+}
+function auditLabel(s) {
+  return { PENDING: '待审核', PASSED: '已通过', REJECTED: '已驳回' }[s] || s
+}
+function auditBadge(s) {
+  return { PENDING: 'badge-info', PASSED: 'badge-ok', REJECTED: 'badge-danger' }[s] || ''
+}
+function notifDotColor(type) {
+  return { AUDIT_PASS: 'dot-ok', AUDIT_REJECT: 'dot-danger', TASK_TIMEOUT: 'dot-warn', ANOMALY: 'dot-ok', TASK_NEW: 'dot-info' }[type] || 'dot-info'
+}
+function formatDateTime(d) {
+  if (!d) return '未设置'
+  return new Date(d).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
+</script>
+
+<style scoped>
+.worker-home { position: relative; padding-bottom: 72px; }
+
+.section { background: #fff; border-radius: 10px; padding: 16px 20px; margin-bottom: 14px; border: 1px solid #f0f0f0; }
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.section-title { font-size: 14px; font-weight: 600; }
+.empty-tip { font-size: 13px; color: #86909c; text-align: center; padding: 16px 0; }
+
+/* 任务卡片 */
+.task-list { display: flex; flex-direction: column; gap: 10px; }
+.task-card { background: #fdfdfd; border: 1px solid #eee; border-radius: 10px; padding: 12px 14px; }
+.task-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.task-name { font-size: 13px; font-weight: 600; color: var(--color-text-primary); }
+.task-zone { font-size: 12px; color: #86909c; margin-top: 2px; }
+.task-footer { display: flex; justify-content: space-between; align-items: center; }
+.task-time { font-size: 12px; color: #aaa; }
+.btn-submit { font-size: 12px; padding: 5px 14px; background: var(--color-primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+
+/* 通知 */
+.btn-readall { font-size: 11px; padding: 3px 10px; border: 1px solid #ddd; background: #fff; border-radius: 5px; cursor: pointer; color: #666; }
+.notif-list { display: flex; flex-direction: column; }
+.notif-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+.notif-row:last-child { border-bottom: none; }
+.notif-row.unread { background: #fafffe; }
+.notif-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.dot-ok { background: #1D9E75; }
+.dot-warn { background: #ff9800; }
+.dot-danger { background: #f44336; }
+.dot-info { background: #1a73e8; }
+.notif-body { flex: 1; }
+.notif-title { font-size: 13px; font-weight: 500; }
+.notif-content { font-size: 12px; color: #666; margin-top: 1px; }
+.notif-time { font-size: 11px; color: #aaa; white-space: nowrap; }
+
+/* 历史记录 */
+.record-list { display: flex; flex-direction: column; }
+.record-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 12px; }
+.record-row:last-child { border-bottom: none; }
+.record-info { display: flex; flex-direction: column; min-width: 64px; }
+.record-type { font-weight: 500; color: var(--color-text-primary); }
+.record-zone { color: #86909c; font-size: 11px; }
+.record-content { flex: 1; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.record-time { color: #aaa; font-size: 11px; white-space: nowrap; }
+
+/* 悬浮上报按钮 */
+.fab-report { position: fixed; bottom: 24px; right: 24px; background: #f44336; color: #fff; border: none; border-radius: 24px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 16px rgba(244,67,54,0.3); z-index: 50; }
+.fab-report:hover { background: #d32f2f; }
+
+/* 徽章 */
+.badge { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
+.badge-ok { background: #e8f5f0; color: #1D9E75; }
+.badge-warn { background: #fff3e0; color: #f77234; }
+.badge-info { background: #f0eeff; color: #534AB7; }
+.badge-danger { background: #fde8e8; color: #d32f2f; }
+
+/* 弹窗 */
+.modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; }
+.modal-box { background: #fff; border-radius: 16px; padding: 24px 28px; width: 440px; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+.modal-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+.modal-task-info { font-size: 12px; color: #86909c; margin-bottom: 16px; }
+.form-item { margin-bottom: 14px; }
+.form-item label { display: block; font-size: 12px; color: #666; margin-bottom: 5px; }
+.form-item input, .form-item select, .form-item textarea { width: 100%; padding: 9px 12px; border: 1px solid #e5e6eb; border-radius: 8px; font-size: 13px; outline: none; }
+.form-item textarea { resize: none; height: 72px; }
+.form-row { display: flex; gap: 12px; }
+.form-item.half { flex: 1; }
+.radio-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.radio-opt { font-size: 12px; padding: 5px 12px; border-radius: 20px; border: 1px solid #ddd; cursor: pointer; color: #666; }
+.radio-opt.sel { border-color: var(--color-primary); color: var(--color-primary); background: #e8f5f0; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.btn-cancel { padding: 8px 18px; border: 1px solid #ddd; background: #fff; border-radius: 8px; cursor: pointer; font-size: 13px; }
+.btn-confirm { padding: 8px 18px; background: #534AB7; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
+.btn-confirm.btn-green { background: var(--color-primary); }
+.btn-confirm:disabled { background: #aaa; cursor: not-allowed; }
+</style>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.smartfarm.mapper.HarvestRecordMapper">
+
+    <resultMap id="HarvestMap" type="com.example.smartfarm.entity.HarvestRecord">
+        <id column="id" property="id"/>
+        <result column="zone_id" property="zoneId"/>
+        <result column="zone_name" property="zoneName"/>
+        <result column="worker_id" property="workerId"/>
+        <result column="worker_name" property="workerName"/>
+        <result column="batch_no" property="batchNo"/>
+        <result column="actual_weight" property="actualWeight"/>
+        <result column="grade_a" property="gradeA"/>
+        <result column="grade_b" property="gradeB"/>
+        <result column="grade_c" property="gradeC"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <select id="listAll" resultMap="HarvestMap">
+        SELECT h.*, u.real_name AS worker_name, z.zone_name
+        FROM harvest_record h
+        LEFT JOIN sys_user u ON h.worker_id = u.id
+        LEFT JOIN farm_zone z ON h.zone_id = z.id
+        ORDER BY h.create_time DESC
+    </select>
+
+    <select id="listByZoneId" resultMap="HarvestMap">
+        SELECT h.*, u.real_name AS worker_name, z.zone_name
+        FROM harvest_record h
+        LEFT JOIN sys_user u ON h.worker_id = u.id
+        LEFT JOIN farm_zone z ON h.zone_id = z.id
+        WHERE h.zone_id = #{zoneId}
+        ORDER BY h.create_time DESC
+    </select>
+
+    <select id="listByWorkerId" resultMap="HarvestMap">
+        SELECT h.*, u.real_name AS worker_name, z.zone_name
+        FROM harvest_record h
+        LEFT JOIN sys_user u ON h.worker_id = u.id
+        LEFT JOIN farm_zone z ON h.zone_id = z.id
+        WHERE h.worker_id = #{workerId}
+        ORDER BY h.create_time DESC
+    </select>
+
+    <select id="getById" resultMap="HarvestMap">
+        SELECT h.*, u.real_name AS worker_name, z.zone_name
+        FROM harvest_record h
+        LEFT JOIN sys_user u ON h.worker_id = u.id
+        LEFT JOIN farm_zone z ON h.zone_id = z.id
+        WHERE h.id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO harvest_record(zone_id, worker_id, batch_no, actual_weight, grade_a, grade_b, grade_c, remark)
+        VALUES(#{zoneId}, #{workerId}, #{batchNo}, #{actualWeight}, #{gradeA}, #{gradeB}, #{gradeC}, #{remark})
+    </insert>
+
+</mapper>

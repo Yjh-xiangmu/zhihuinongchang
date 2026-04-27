@@ -2,20 +2,22 @@
   <div class="shell">
     <div class="topbar">
       <div class="topbar-left">
-        <div class="topbar-title">智慧农场管理系统</div>
-        <div class="topbar-sub">农场管理员 · 王建国</div>
+        <div class="logo-dot"></div>
+        <div>
+          <div class="topbar-title">智慧农场管理系统</div>
+          <div class="topbar-sub">农场管理员 · {{ userInfo.realName }}</div>
+        </div>
       </div>
-      <button class="logout-btn" @click="$router.push('/')">退出系统</button>
+      <button class="logout-btn" @click="logout">退出系统</button>
     </div>
     <div class="layout">
       <div class="sidebar">
-        <div class="nav-item active">全场看板</div>
-        <div class="nav-item">种植区域</div>
-        <div class="nav-item">预警中心</div>
-        <div class="nav-item">产量报告</div>
-        <div class="nav-item">追溯查询</div>
-        <div class="nav-item">账号管理</div>
-        <div class="nav-item">AI 建议</div>
+        <router-link class="nav-item" to="/admin/dashboard" active-class="active">全场看板</router-link>
+        <router-link class="nav-item" to="/admin/zones"     active-class="active">种植区域</router-link>
+        <router-link class="nav-item" to="/admin/alerts"    active-class="active">预警中心</router-link>
+        <router-link class="nav-item" to="/admin/report"    active-class="active">产量报告</router-link>
+        <router-link class="nav-item" to="/admin/trace"     active-class="active">追溯查询</router-link>
+        <router-link class="nav-item" to="/admin/accounts"  active-class="active">账号管理</router-link>
       </div>
       <div class="main">
         <router-view></router-view>
@@ -24,59 +26,29 @@
   </div>
 </template>
 
+<script setup>
+import { useRouter } from 'vue-router'
+const router = useRouter()
+const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+function logout() {
+  localStorage.removeItem('userInfo')
+  router.push('/')
+}
+</script>
+
 <style scoped>
-.shell { height: 100vh; background: var(--color-bg-body); display: flex; flex-direction: column; overflow: hidden; }
-
-.topbar {
-  background: var(--color-bg-surface);
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: var(--shadow-sm);
-  z-index: 10;
-}
-.topbar-left { display: flex; align-items: baseline; gap: 12px; }
-.topbar-title { font-size: 16px; font-weight: 600; color: var(--color-text-primary); letter-spacing: 0.5px; }
-.topbar-sub { font-size: 12px; color: var(--color-text-muted); }
-
-.logout-btn {
-  font-size: 13px;
-  padding: 6px 14px;
-  cursor: pointer;
-  border: 1px solid var(--color-border);
-  background: var(--color-bg-surface);
-  color: var(--color-text-regular);
-  border-radius: var(--radius-md);
-  transition: var(--transition);
-}
-.logout-btn:hover { background: var(--color-bg-hover); color: var(--color-text-primary); }
-
-.layout { display: flex; flex: 1; overflow: hidden; }
-
-.sidebar {
-  width: 140px;
-  background: var(--color-bg-surface);
-  padding: 16px 8px;
-  flex-shrink: 0;
-  box-shadow: var(--shadow-sm);
-  z-index: 5;
-}
-.nav-item {
-  padding: 12px 16px;
-  font-size: 13px;
-  color: var(--color-text-regular);
-  cursor: pointer;
-  border-radius: var(--radius-md);
-  margin-bottom: 4px;
-  transition: var(--transition);
-}
-.nav-item:hover { background: var(--color-bg-hover); color: var(--color-text-primary); }
-.nav-item.active {
-  background: #e8f5f0;
-  color: var(--color-primary);
-  font-weight: 600;
-}
-
-.main { flex: 1; padding: 24px; overflow-y: auto; }
+.shell { height:100vh; display:flex; flex-direction:column; overflow:hidden; background:var(--color-bg-body); }
+.topbar { background:#fff; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 1px 4px rgba(0,0,0,0.06); z-index:10; flex-shrink:0; }
+.topbar-left { display:flex; align-items:center; gap:12px; }
+.logo-dot { width:32px; height:32px; background:var(--color-primary); border-radius:8px; flex-shrink:0; }
+.topbar-title { font-size:15px; font-weight:600; color:var(--color-text-primary); }
+.topbar-sub { font-size:12px; color:var(--color-text-muted); }
+.logout-btn { font-size:12px; padding:6px 14px; cursor:pointer; border:1px solid var(--color-border); background:#fff; color:var(--color-text-regular); border-radius:var(--radius-md); transition:var(--transition); }
+.logout-btn:hover { background:var(--color-bg-hover); }
+.layout { display:flex; flex:1; overflow:hidden; }
+.sidebar { width:130px; background:#fff; padding:12px 8px; flex-shrink:0; border-right:1px solid var(--color-border); display:flex; flex-direction:column; gap:2px; }
+.nav-item { display:block; padding:10px 14px; font-size:13px; color:var(--color-text-regular); cursor:pointer; border-radius:var(--radius-md); text-decoration:none; transition:var(--transition); }
+.nav-item:hover { background:var(--color-bg-hover); color:var(--color-text-primary); }
+.nav-item.active { background:#e8f5f0; color:var(--color-primary); font-weight:600; }
+.main { flex:1; padding:20px 24px; overflow-y:auto; }
 </style>
