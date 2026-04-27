@@ -32,7 +32,6 @@
       </div>
     </div>
 
-    <!-- 派发弹窗 -->
     <div v-if="showModal" class="modal-mask" @click.self="showModal=false">
       <div class="modal-box">
         <div class="modal-title">派发新任务</div>
@@ -51,19 +50,23 @@
               <option value="HARVEST">采收</option>
             </select>
           </div>
-          <div class="form-item">
-            <label>指派员工</label>
-            <select v-model="form.assigneeId">
-              <option :value="null">请选择</option>
-              <option v-for="w in workers" :key="w.id" :value="w.id">{{ w.realName }}</option>
-            </select>
-          </div>
+
           <div class="form-item">
             <label>所属区域</label>
-            <select v-model="form.zoneId">
+            <select v-model="form.zoneId" @change="loadZoneWorkers">
+              <option :value="null">请选择区域</option>
               <option v-for="z in zones" :key="z.id" :value="z.id">{{ z.zoneName }}</option>
             </select>
           </div>
+
+          <div class="form-item">
+            <label>指派员工</label>
+            <select v-model="form.assigneeId" :disabled="!form.zoneId">
+              <option :value="null">{{ form.zoneId ? '请选择员工' : '先选区域' }}</option>
+              <option v-for="w in zoneWorkers" :key="w.id" :value="w.id">{{ w.realName }}</option>
+            </select>
+          </div>
+
           <div class="form-item">
             <label>截止时间</label>
             <input type="datetime-local" v-model="form.deadline" />
@@ -88,12 +91,12 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { taskApi, userApi, zoneApi } from '@/api.js'
+import { taskApi, zoneApi } from '@/api.js'
 
 const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
 const tasks = ref([])
-const workers = ref([])
 const zones = ref([])
+const zoneWorkers = ref([])
 const filterStatus = ref('')
 const showModal = ref(false)
 const saving = ref(false)
@@ -107,13 +110,8 @@ const tabs = [
 ]
 
 onMounted(async () => {
-  const [r1,r2,r3] = await Promise.all([
-    zoneApi.listByManager(userInfo.id),
-    userApi.listByRole('WORKER'),
-    zoneApi.listByManager(userInfo.id),
-  ])
+  const r1 = await zoneApi.listByManager(userInfo.id)
   if (r1.data.code===200) zones.value = r1.data.data||[]
-  if (r2.data.code===200) workers.value = r2.data.data||[]
   await loadTasks()
 })
 
@@ -131,7 +129,18 @@ const countByStatus = s => s ? tasks.value.filter(t=>t.status===s).length : task
 
 function openAdd() {
   form.value = { taskName:'', taskType:'GROWTH', assigneeId:null, zoneId: zones.value[0]?.id||null, deadline:'', rowNo:'', description:'', creatorId: userInfo.id }
+  loadZoneWorkers()
   showModal.value = true
+}
+
+async function loadZoneWorkers() {
+  form.value.assigneeId = null
+  zoneWorkers.value = []
+  if (!form.value.zoneId) return
+  const res = await zoneApi.getWorkers(form.value.zoneId)
+  if (res.data.code === 200) {
+    zoneWorkers.value = res.data.data || []
+  }
 }
 
 async function submit() {

@@ -8,7 +8,6 @@
       <button class="btn-primary" @click="openAdd">+ 新建区域</button>
     </div>
 
-    <!-- 区域列表 -->
     <div class="card">
       <div v-if="loading" class="loading-tip">加载中...</div>
       <div v-else-if="zones.length === 0" class="empty-tip">暂无区域，点击右上角新建</div>
@@ -30,6 +29,7 @@
           <td>{{ z.managerName || '未指定' }}</td>
           <td><span :class="['badge', statusBadge(z.status)]">{{ statusLabel(z.status) }}</span></td>
           <td class="actions">
+            <button class="btn-link" @click="openAssignWorkers(z)">分配员工</button>
             <button class="btn-link" @click="openEdit(z)">编辑</button>
             <button class="btn-link danger" @click="deleteZone(z)">删除</button>
           </td>
@@ -38,7 +38,6 @@
       </table>
     </div>
 
-    <!-- 新建/编辑弹窗 -->
     <div v-if="showModal" class="modal-mask" @click.self="showModal=false">
       <div class="modal-box">
         <div class="modal-title">{{ isEdit ? '编辑区域' : '新建区域' }}</div>
@@ -97,13 +96,32 @@
         </div>
       </div>
     </div>
+
+    <div v-if="showAssignModal" class="modal-mask" @click.self="showAssignModal=false">
+      <div class="modal-box" style="width:400px;">
+        <div class="modal-title">分配员工 - {{ currentZone?.zoneName }}</div>
+        <div class="form-item">
+          <label>选择分配到该区域的员工（可多选）</label>
+          <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--color-border); padding: 10px; border-radius: var(--radius-md);">
+            <label v-for="w in allWorkers" :key="w.id" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+              <input type="checkbox" :value="w.id" v-model="selectedWorkerIds" style="width: auto; margin: 0;">
+              <span style="font-size: 13px; color: #333;">{{ w.realName }} ({{ w.username }})</span>
+            </label>
+            <div v-if="allWorkers.length === 0" style="color: #999; font-size: 12px; text-align: center;">暂无普通员工</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-cancel" @click="showAssignModal=false">取消</button>
+          <button class="btn-primary" @click="submitAssign">确认分配</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { zoneApi } from '@/api.js'
-import { userApi } from '@/api.js'
+import { zoneApi, userApi } from '@/api.js'
 
 const zones = ref([])
 const managers = ref([])
@@ -112,6 +130,12 @@ const showModal = ref(false)
 const isEdit = ref(false)
 const saving = ref(false)
 const form = ref({})
+
+// 分配员工相关
+const showAssignModal = ref(false)
+const currentZone = ref(null)
+const allWorkers = ref([])
+const selectedWorkerIds = ref([])
 
 onMounted(async () => {
   loading.value = true
@@ -154,6 +178,34 @@ async function deleteZone(z) {
   if (!confirm(`确认删除【${z.zoneName}】？`)) return
   await zoneApi.remove(z.id)
   await loadZones()
+}
+
+// 打开分配员工弹窗
+async function openAssignWorkers(zone) {
+  currentZone.value = zone
+  selectedWorkerIds.value = []
+  showAssignModal.value = true
+
+  // 查询所有普通员工
+  const uRes = await userApi.listByRole('WORKER')
+  if (uRes.data.code === 200) allWorkers.value = uRes.data.data || []
+
+  // 查询该区域当前绑定的员工进行回显
+  const wRes = await zoneApi.getWorkers(zone.id)
+  if (wRes.data.code === 200) {
+    selectedWorkerIds.value = (wRes.data.data || []).map(w => w.id)
+  }
+}
+
+// 提交分配
+async function submitAssign() {
+  try {
+    await zoneApi.setWorkers(currentZone.value.id, selectedWorkerIds.value)
+    showAssignModal.value = false
+    alert('员工分配成功')
+  } catch(e) {
+    alert('分配失败')
+  }
 }
 
 const statusLabel = s => ({NORMAL:'正常',WARNING:'异常',HARVESTING:'采收中'}[s]||s)

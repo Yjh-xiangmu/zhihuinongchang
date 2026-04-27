@@ -1,7 +1,6 @@
 <template>
   <div class="worker-home">
 
-    <!-- 任务区 -->
     <div class="section">
       <div class="section-header">
         <span class="section-title">今日任务</span>
@@ -20,9 +19,9 @@
           <div class="task-footer">
             <span class="task-time">截止：{{ formatDateTime(t.deadline) }}</span>
             <button
-              v-if="t.status === 'PENDING'"
-              class="btn-submit"
-              @click="openRecordForm(t)"
+                v-if="t.status === 'PENDING'"
+                class="btn-submit"
+                @click="openRecordForm(t)"
             >
               提交记录
             </button>
@@ -31,7 +30,6 @@
       </div>
     </div>
 
-    <!-- 消息通知 -->
     <div class="section">
       <div class="section-header">
         <span class="section-title">消息通知</span>
@@ -40,10 +38,10 @@
       <div v-if="notifications.length === 0" class="empty-tip">暂无消息</div>
       <div class="notif-list">
         <div
-          v-for="n in notifications.slice(0, 8)"
-          :key="n.id"
-          :class="['notif-row', { unread: n.isRead === 0 }]"
-          @click="markRead(n)"
+            v-for="n in notifications.slice(0, 8)"
+            :key="n.id"
+            :class="['notif-row', { unread: n.isRead === 0 }]"
+            @click="markRead(n)"
         >
           <div :class="['notif-dot', notifDotColor(n.type)]"></div>
           <div class="notif-body">
@@ -55,7 +53,6 @@
       </div>
     </div>
 
-    <!-- 我的历史记录 -->
     <div class="section">
       <div class="section-header">
         <span class="section-title">历史提交记录</span>
@@ -67,14 +64,13 @@
             <span class="record-type">{{ recordTypeLabel(r.recordType) }}</span>
             <span class="record-zone">{{ r.zoneName }}</span>
           </div>
-          <div class="record-content">{{ r.content }}</div>
+          <div class="record-content">{{ parseContent(r.content) }}</div>
           <span :class="['badge', auditBadge(r.auditStatus)]">{{ auditLabel(r.auditStatus) }}</span>
           <span class="record-time">{{ formatDateTime(r.createTime) }}</span>
         </div>
       </div>
     </div>
 
-    <!-- 提交记录弹窗 -->
     <div v-if="showRecordForm" class="modal-mask" @click.self="showRecordForm = false">
       <div class="modal-box">
         <div class="modal-title">提交任务记录</div>
@@ -90,7 +86,6 @@
           </select>
         </div>
 
-        <!-- 生长记录的专用字段 -->
         <template v-if="newRecord.recordType === 'GROWTH'">
           <div class="form-row">
             <div class="form-item half">
@@ -111,20 +106,44 @@
             <label>叶色</label>
             <div class="radio-row">
               <span
-                v-for="opt in ['正常', '偏黄', '偏深', '其他']"
-                :key="opt"
-                :class="['radio-opt', { sel: growthForm.leafColor === opt }]"
-                @click="growthForm.leafColor = opt"
+                  v-for="opt in ['正常', '偏黄', '偏深', '其他']"
+                  :key="opt"
+                  :class="['radio-opt', { sel: growthForm.leafColor === opt }]"
+                  @click="growthForm.leafColor = opt"
               >{{ opt }}</span>
             </div>
           </div>
         </template>
 
-        <!-- 施肥记录 -->
         <template v-if="newRecord.recordType === 'FERTILIZER'">
           <div class="form-item">
             <label>施肥用量</label>
             <input v-model="fertilizerForm.amount" placeholder="如：20kg" />
+          </div>
+        </template>
+
+        <template v-if="newRecord.recordType === 'HARVEST'">
+          <div class="form-item">
+            <label>采收批次号 *</label>
+            <input v-model="harvestForm.batchNo" placeholder="如：B2024032501" />
+          </div>
+          <div class="form-item">
+            <label>总产量 (kg) *</label>
+            <input v-model="harvestForm.yield" type="number" placeholder="实际采收总重量" />
+          </div>
+          <div class="form-row">
+            <div class="form-item half">
+              <label>A级产量 (kg)</label>
+              <input v-model="harvestForm.gradeA" type="number" placeholder="0" />
+            </div>
+            <div class="form-item half">
+              <label>B级产量 (kg)</label>
+              <input v-model="harvestForm.gradeB" type="number" placeholder="0" />
+            </div>
+          </div>
+          <div class="form-item">
+            <label>C级产量 (kg)</label>
+            <input v-model="harvestForm.gradeC" type="number" placeholder="0" />
           </div>
         </template>
 
@@ -142,10 +161,8 @@
       </div>
     </div>
 
-    <!-- 上报异常按钮（悬浮） -->
     <button class="fab-report" @click="showAnomalyForm = true">+ 上报异常</button>
 
-    <!-- 上报异常弹窗 -->
     <div v-if="showAnomalyForm" class="modal-mask" @click.self="showAnomalyForm = false">
       <div class="modal-box">
         <div class="modal-title">上报异常问题</div>
@@ -178,7 +195,7 @@
 
 <script setup>
 import { ref, computed, onMounted, reactive } from 'vue'
-import { taskApi, recordApi, anomalyApi, notificationApi } from '@/api.js'
+import { taskApi, recordApi, anomalyApi, notificationApi, harvestApi } from '@/api.js'
 
 const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
 const workerId = userInfo.id
@@ -196,6 +213,7 @@ const remarkText = ref('')
 const newRecord = reactive({ recordType: 'GROWTH', taskId: null, zoneId: null, workerId: workerId })
 const growthForm = reactive({ plantHeight: '', leafColor: '正常', growth: '良' })
 const fertilizerForm = reactive({ amount: '' })
+const harvestForm = reactive({ batchNo: '', yield: '', gradeA: '', gradeB: '', gradeC: '' })
 const newAnomaly = reactive({ anomalyType: 'PEST', zoneId: null, description: '', reporterId: workerId })
 
 onMounted(async () => {
@@ -231,13 +249,17 @@ function openRecordForm(task) {
   newRecord.zoneId = task.zoneId
   newRecord.recordType = 'GROWTH'
   remarkText.value = ''
+  harvestForm.batchNo = ''
+  harvestForm.yield = ''
+  harvestForm.gradeA = ''
+  harvestForm.gradeB = ''
+  harvestForm.gradeC = ''
   showRecordForm.value = true
 }
 
 async function submitRecord() {
   submitting.value = true
   try {
-    // 根据类型拼接 content
     let content = ''
     if (newRecord.recordType === 'GROWTH') {
       content = JSON.stringify({
@@ -248,6 +270,33 @@ async function submitRecord() {
       })
     } else if (newRecord.recordType === 'FERTILIZER') {
       content = JSON.stringify({ amount: fertilizerForm.amount, remark: remarkText.value })
+    } else if (newRecord.recordType === 'HARVEST') {
+      if (!harvestForm.yield || !harvestForm.batchNo) {
+        alert('请填写批次号和总产量')
+        submitting.value = false
+        return
+      }
+      // 保存农事记录展示
+      content = JSON.stringify({
+        batchNo: harvestForm.batchNo,
+        yield: harvestForm.yield + 'kg',
+        gradeA: (harvestForm.gradeA || 0) + 'kg',
+        gradeB: (harvestForm.gradeB || 0) + 'kg',
+        gradeC: (harvestForm.gradeC || 0) + 'kg',
+        remark: remarkText.value
+      })
+
+      // 同步调用 harvestApi.add 接口，将详细数据存入采收记录表
+      await harvestApi.add({
+        zoneId: newRecord.zoneId,
+        workerId: workerId,
+        batchNo: harvestForm.batchNo,
+        yield: harvestForm.yield,
+        gradeA: harvestForm.gradeA || 0,
+        gradeB: harvestForm.gradeB || 0,
+        gradeC: harvestForm.gradeC || 0,
+        remark: remarkText.value
+      })
     } else {
       content = JSON.stringify({ remark: remarkText.value })
     }
@@ -287,6 +336,18 @@ async function markAllRead() {
   } catch (e) {}
 }
 
+function parseContent(c) {
+  if (!c) return '无内容'
+  try {
+    const obj = JSON.parse(c)
+    const labelMap = { plant_height: '株高', leaf_color: '叶色', growth: '生长状态', remark: '备注', amount: '用量', yield: '总重量', batchNo: '批次' }
+    return Object.entries(obj)
+        .filter(([, v]) => v !== '' && v !== null && v !== undefined)
+        .map(([k, v]) => `${labelMap[k] || k}：${v}`)
+        .join(' · ')
+  } catch (e) { return c }
+}
+
 const pendingTasks = computed(() => tasks.value.filter(t => t.status === 'PENDING'))
 
 function taskStatusLabel(s) {
@@ -321,7 +382,6 @@ function formatDateTime(d) {
 .section-title { font-size: 14px; font-weight: 600; }
 .empty-tip { font-size: 13px; color: #86909c; text-align: center; padding: 16px 0; }
 
-/* 任务卡片 */
 .task-list { display: flex; flex-direction: column; gap: 10px; }
 .task-card { background: #fdfdfd; border: 1px solid #eee; border-radius: 10px; padding: 12px 14px; }
 .task-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
@@ -331,7 +391,6 @@ function formatDateTime(d) {
 .task-time { font-size: 12px; color: #aaa; }
 .btn-submit { font-size: 12px; padding: 5px 14px; background: var(--color-primary); color: #fff; border: none; border-radius: 6px; cursor: pointer; }
 
-/* 通知 */
 .btn-readall { font-size: 11px; padding: 3px 10px; border: 1px solid #ddd; background: #fff; border-radius: 5px; cursor: pointer; color: #666; }
 .notif-list { display: flex; flex-direction: column; }
 .notif-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
@@ -347,28 +406,24 @@ function formatDateTime(d) {
 .notif-content { font-size: 12px; color: #666; margin-top: 1px; }
 .notif-time { font-size: 11px; color: #aaa; white-space: nowrap; }
 
-/* 历史记录 */
 .record-list { display: flex; flex-direction: column; }
 .record-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 12px; }
 .record-row:last-child { border-bottom: none; }
-.record-info { display: flex; flex-direction: column; min-width: 64px; }
+.record-info { display: flex; flex-direction: column; min-width: 64px; flex-shrink: 0; }
 .record-type { font-weight: 500; color: var(--color-text-primary); }
 .record-zone { color: #86909c; font-size: 11px; }
-.record-content { flex: 1; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.record-time { color: #aaa; font-size: 11px; white-space: nowrap; }
+.record-content { flex: 1; min-width: 0; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.record-time { flex-shrink: 0; color: #aaa; font-size: 11px; white-space: nowrap; }
 
-/* 悬浮上报按钮 */
 .fab-report { position: fixed; bottom: 24px; right: 24px; background: #f44336; color: #fff; border: none; border-radius: 24px; padding: 12px 20px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 16px rgba(244,67,54,0.3); z-index: 50; }
 .fab-report:hover { background: #d32f2f; }
 
-/* 徽章 */
-.badge { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
+.badge { flex-shrink: 0; display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
 .badge-ok { background: #e8f5f0; color: #1D9E75; }
 .badge-warn { background: #fff3e0; color: #f77234; }
 .badge-info { background: #f0eeff; color: #534AB7; }
 .badge-danger { background: #fde8e8; color: #d32f2f; }
 
-/* 弹窗 */
 .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 100; display: flex; align-items: center; justify-content: center; }
 .modal-box { background: #fff; border-radius: 16px; padding: 24px 28px; width: 440px; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
 .modal-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
