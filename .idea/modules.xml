@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/smart-farm-backend/smart-farm.iml" filepath="$PROJECT_DIR$/smart-farm-backend/smart-farm.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/zhihuinongchang.iml" filepath="$PROJECT_DIR$/.idea/zhihuinongchang.iml" />
+    </modules>
+  </component>
+</project>

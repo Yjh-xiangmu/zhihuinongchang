@@ -5,10 +5,15 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/smart_farm?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
     username: root
-    password: 123456 # ??????? MySQL ???? root???????
+    password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
 
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   configuration:
-    map-underscore-to-camel-case: true # ??????????
+    map-underscore-to-camel-case: true
+
+# Qwen AI 配置（把 sk-xxxxxxxx 换成你的真实 API Key）
+qwen:
+  api-key: sk-fd3aef5e96de4937b7cef2e4c2c8bc03
+  model: qwen-vl-plus

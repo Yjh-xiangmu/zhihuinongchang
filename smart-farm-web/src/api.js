@@ -70,3 +70,12 @@ export const notificationApi = {
   markRead: (id) => http.post(`/notifications/read/${id}`),
   markAllRead: (userId) => http.post(`/notifications/readAll/${userId}`)
 }
+// ==================== AI 接口 ====================
+export const aiApi = {
+  // 发送消息（支持图片）
+  chat: (data) => http.post('/ai/chat', data),
+  // 获取历史记录
+  getHistory: (userId, sessionId) => http.get(`/ai/history?userId=${userId}&sessionId=${sessionId}`),
+  // 清除会话
+  clearHistory: (userId, sessionId) => http.delete(`/ai/history?userId=${userId}&sessionId=${sessionId}`),
+}
