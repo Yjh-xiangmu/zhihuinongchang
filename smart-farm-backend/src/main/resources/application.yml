@@ -15,5 +15,5 @@ mybatis:
 
 # Qwen AI 配置（把 sk-xxxxxxxx 换成你的真实 API Key）
 qwen:
-  api-key: sk-fd3aef5e96de4937b7cef2e4c2c8bc03
+  api-key: sk-08555af6990f421a8b1367d1c8904436
   model: qwen-vl-plus

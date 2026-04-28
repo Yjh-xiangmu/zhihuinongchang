@@ -20,6 +20,7 @@ const router = createRouter({
         { path: 'report',    component: () => import('../views/admin/YieldReport.vue') },
         { path: 'trace',     component: () => import('../views/admin/TraceQuery.vue') },
         { path: 'accounts',  component: () => import('../views/admin/AccountManage.vue') },
+        { path: 'ai', component: () => import('../views/common/AiAssistant.vue') },
       ]
     },
     {
@@ -33,6 +34,7 @@ const router = createRouter({
         { path: 'timeline',component: () => import('../views/manager/GrowthTimeline.vue') },
         { path: 'anomaly', component: () => import('../views/manager/AnomalyHandle.vue') },
         { path: 'report',  component: () => import('../views/manager/WeeklyReport.vue') },
+        { path: 'ai', component: () => import('../views/common/AiAssistant.vue') },
       ]
     },
     {
@@ -44,6 +46,7 @@ const router = createRouter({
         { path: 'records', component: () => import('../views/worker/MyRecords.vue') },
         { path: 'anomaly', component: () => import('../views/worker/ReportAnomaly.vue') },
         { path: 'messages',component: () => import('../views/worker/MyMessages.vue') },
+        { path: 'ai', component: () => import('../views/common/AiAssistant.vue') },
       ]
     }
   ]

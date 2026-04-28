@@ -22,8 +22,8 @@
     <select id="listByZoneId" resultMap="TaskMap">
         SELECT t.*, u.real_name AS assignee_name, z.zone_name
         FROM farm_task t
-        LEFT JOIN sys_user u ON t.assignee_id = u.id
-        LEFT JOIN farm_zone z ON t.zone_id = z.id
+                 LEFT JOIN sys_user u ON t.assignee_id = u.id
+                 LEFT JOIN farm_zone z ON t.zone_id = z.id
         WHERE t.zone_id = #{zoneId}
         ORDER BY t.create_time DESC
     </select>
@@ -31,8 +31,8 @@
     <select id="listByAssigneeId" resultMap="TaskMap">
         SELECT t.*, u.real_name AS assignee_name, z.zone_name
         FROM farm_task t
-        LEFT JOIN sys_user u ON t.assignee_id = u.id
-        LEFT JOIN farm_zone z ON t.zone_id = z.id
+                 LEFT JOIN sys_user u ON t.assignee_id = u.id
+                 LEFT JOIN farm_zone z ON t.zone_id = z.id
         WHERE t.assignee_id = #{assigneeId}
         ORDER BY t.deadline ASC
     </select>
@@ -52,8 +52,8 @@
     <select id="getById" resultMap="TaskMap">
         SELECT t.*, u.real_name AS assignee_name, z.zone_name
         FROM farm_task t
-        LEFT JOIN sys_user u ON t.assignee_id = u.id
-        LEFT JOIN farm_zone z ON t.zone_id = z.id
+                 LEFT JOIN sys_user u ON t.assignee_id = u.id
+                 LEFT JOIN farm_zone z ON t.zone_id = z.id
         WHERE t.id = #{id}
     </select>
 

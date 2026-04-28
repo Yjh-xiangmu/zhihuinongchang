@@ -63,11 +63,30 @@ const filtered = computed(() =>
 const countByAudit = s => s ? records.value.filter(r => r.auditStatus === s).length : records.value.length
 
 function parseContent(c) {
+  if (!c) return '无内容'
   try {
     const obj = JSON.parse(c)
-    const map = { plant_height: '株高', leaf_color: '叶色', growth: '生长状态', remark: '备注', amount: '用量' }
-    return Object.entries(obj).map(([k, v]) => `${map[k] || k}: ${v}`).filter(s => !s.endsWith(': ')).join(' · ')
-  } catch (e) { return c }
+    // 补全了采收等所有相关的中英文对照字典
+    const map = {
+      plant_height: '株高',
+      leaf_color: '叶色',
+      growth: '生长状态',
+      remark: '备注',
+      amount: '用量',
+      batchNo: '批次号',
+      yield: '总产量',
+      gradeA: 'A级果',
+      gradeB: 'B级果',
+      gradeC: 'C级果'
+    }
+    return Object.entries(obj)
+        .filter(([, v]) => v !== '' && v !== null && v !== undefined) // 过滤掉空值
+        .map(([k, v]) => `${map[k] || k}: ${v}`)
+        .filter(s => !s.endsWith(': ')) // 过滤掉没有值的键
+        .join(' · ')
+  } catch (e) {
+    return c
+  }
 }
 
 const typeLabel = t => ({ GROWTH: '生长记录', WATER: '浇水', FERTILIZER: '施肥', HARVEST: '采收' }[t] || t)

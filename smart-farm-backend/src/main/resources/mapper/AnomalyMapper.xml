@@ -22,16 +22,16 @@
     <select id="listAll" resultMap="AnomalyMap">
         SELECT a.*, u.real_name AS reporter_name, z.zone_name
         FROM farm_anomaly a
-        LEFT JOIN sys_user u ON a.reporter_id = u.id
-        LEFT JOIN farm_zone z ON a.zone_id = z.id
+                 LEFT JOIN sys_user u ON a.reporter_id = u.id
+                 LEFT JOIN farm_zone z ON a.zone_id = z.id
         ORDER BY a.create_time DESC
     </select>
 
     <select id="listByZoneId" resultMap="AnomalyMap">
         SELECT a.*, u.real_name AS reporter_name, z.zone_name
         FROM farm_anomaly a
-        LEFT JOIN sys_user u ON a.reporter_id = u.id
-        LEFT JOIN farm_zone z ON a.zone_id = z.id
+                 LEFT JOIN sys_user u ON a.reporter_id = u.id
+                 LEFT JOIN farm_zone z ON a.zone_id = z.id
         WHERE a.zone_id = #{zoneId}
         ORDER BY a.create_time DESC
     </select>
@@ -51,8 +51,8 @@
     <select id="listByReporterId" resultMap="AnomalyMap">
         SELECT a.*, u.real_name AS reporter_name, z.zone_name
         FROM farm_anomaly a
-        LEFT JOIN sys_user u ON a.reporter_id = u.id
-        LEFT JOIN farm_zone z ON a.zone_id = z.id
+                 LEFT JOIN sys_user u ON a.reporter_id = u.id
+                 LEFT JOIN farm_zone z ON a.zone_id = z.id
         WHERE a.reporter_id = #{reporterId}
         ORDER BY a.create_time DESC
     </select>
@@ -60,8 +60,8 @@
     <select id="getById" resultMap="AnomalyMap">
         SELECT a.*, u.real_name AS reporter_name, z.zone_name
         FROM farm_anomaly a
-        LEFT JOIN sys_user u ON a.reporter_id = u.id
-        LEFT JOIN farm_zone z ON a.zone_id = z.id
+                 LEFT JOIN sys_user u ON a.reporter_id = u.id
+                 LEFT JOIN farm_zone z ON a.zone_id = z.id
         WHERE a.id = #{id}
     </select>
 

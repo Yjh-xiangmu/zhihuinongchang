@@ -3,6 +3,11 @@ package com.example.smartfarm.controller;
 import com.example.smartfarm.common.Result;
 import com.example.smartfarm.entity.AiChatHistory;
 import com.example.smartfarm.mapper.AiChatHistoryMapper;
+import com.example.smartfarm.mapper.TaskMapper;
+import com.example.smartfarm.mapper.AnomalyMapper;
+import com.example.smartfarm.mapper.HarvestRecordMapper;
+import com.example.smartfarm.mapper.ZoneWorkerMapper;
+import com.example.smartfarm.mapper.ZoneMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +32,21 @@ public class AiController {
 
     @Autowired
     private AiChatHistoryMapper aiChatHistoryMapper;
+
+    @Autowired
+    private TaskMapper taskMapper;
+
+    @Autowired
+    private AnomalyMapper anomalyMapper;
+
+    @Autowired
+    private HarvestRecordMapper harvestRecordMapper;
+
+    @Autowired
+    private ZoneWorkerMapper zoneWorkerMapper;
+
+    @Autowired
+    private ZoneMapper zoneMapper;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -62,8 +82,8 @@ public class AiController {
             int start = Math.max(0, history.size() - 10);
             List<AiChatHistory> recentHistory = history.subList(start, history.size());
 
-            // 3. 构建系统提示词（根据角色不同）
-            String systemPrompt = buildSystemPrompt(userRole);
+            // 3. 构建系统提示词（传入角色和用户ID）
+            String systemPrompt = buildSystemPrompt(userRole, userId);
 
             // 4. 构建 messages 数组
             List<Map<String, Object>> messages = new ArrayList<>();
@@ -94,7 +114,7 @@ public class AiController {
                 Map<String, Object> imgContent = new HashMap<>();
                 imgContent.put("type", "image_url");
                 Map<String, String> imgUrl = new HashMap<>();
-                // 判断图片类型（默认jpeg）
+                // 判断图片类型
                 String mimeType = imageBase64.startsWith("/9j/") ? "image/jpeg" : "image/png";
                 imgUrl.put("url", "data:" + mimeType + ";base64," + imageBase64);
                 imgContent.put("image_url", imgUrl);
@@ -180,37 +200,127 @@ public class AiController {
     }
 
     /**
-     * 根据角色生成不同的系统提示词
+     * 根据角色和数据库实际数据生成不同的系统提示词
      */
-    private String buildSystemPrompt(String role) {
-        switch (role) {
-            case "WORKER":
-                return "你是一个专业的农业助手，专门帮助农场一线员工解决问题。" +
-                        "你的职责包括：1) 识别植物病虫害（用户可能上传图片）并给出防治建议；" +
-                        "2) 解答日常农事操作问题，如施肥、浇水、修剪的具体方法；" +
-                        "3) 帮助判断作物生长状态是否正常。" +
-                        "回答要简洁实用，避免专业术语堆砌，用员工能听懂的语言。" +
-                        "如果用户上传了植物照片，请仔细分析图片中的病害特征、虫害痕迹或生长异常，给出诊断和处理建议。";
+    private String buildSystemPrompt(String role, Integer userId) {
+        // 这是限制AI语气的紧箍咒，去除了所有AI味道
+        String styleRule = "【重要要求：请像经验丰富的农业师傅和乡亲面对面聊天一样回答。绝对不要使用任何Markdown排版符号（比如 ###、*、-、--- 等），不要使用加粗。】\n";
 
-            case "MANAGER":
-                return "你是一个农业生产管理顾问，帮助区域负责人做出更好的管理决策。" +
-                        "你的职责包括：1) 分析作物各生长阶段的管理要点和注意事项；" +
-                        "2) 根据描述的生长情况判断是否存在风险，给出预警建议；" +
-                        "3) 帮助制定合理的施肥、灌溉计划；" +
-                        "4) 解答病虫害防治的综合管理方案。" +
-                        "回答要有数据支撑，适当给出具体的用量、时间节点等量化建议。";
+        StringBuilder dataContext = new StringBuilder();
 
-            case "ADMIN":
-                return "你是一个农场经营管理顾问，帮助农场管理员做战略决策。" +
-                        "你的职责包括：1) 提供种植规划建议，包括轮作、间作等种植制度；" +
-                        "2) 分析产量影响因素，给出提升产量和品质的建议；" +
-                        "3) 帮助进行成本效益分析；" +
-                        "4) 提供市场行情分析和销售建议；" +
-                        "5) 解答农场整体运营管理问题。" +
-                        "回答要站在全局角度，注重经济效益和可持续发展。";
+        try {
+            if ("MANAGER".equals(role)) {
+                // 负责人：查地块、作物、具体手下员工（real_name）、员工待办任务数、具体异常
+                List<com.example.smartfarm.entity.Zone> myZones = zoneMapper.listByManagerId(userId);
+                if (myZones != null && !myZones.isEmpty()) {
+                    dataContext.append("【以下是数据库中实时的管辖数据，请以此为依据进行调度和决策：\n");
+                    List<Integer> zoneIds = new ArrayList<>();
 
-            default:
-                return "你是一个专业的农业助手，请回答用户关于农业生产的问题。";
+                    for (com.example.smartfarm.entity.Zone z : myZones) {
+                        zoneIds.add(z.getId());
+                        dataContext.append("地块：").append(z.getZoneName())
+                                .append("（种植：").append(z.getCropName())
+                                .append("，生长阶段：").append(z.getGrowthStage()).append("）。");
+
+                        // 查询该区域的员工，并统计各自手里没做完的任务
+                        List<com.example.smartfarm.entity.User> workers = zoneWorkerMapper.listWorkersByZone(z.getId());
+                        if (workers != null && !workers.isEmpty()) {
+                            dataContext.append("本区域可用员工：");
+                            for (com.example.smartfarm.entity.User w : workers) {
+                                // 查询该员工手里非DONE状态的任务
+                                List<com.example.smartfarm.entity.Task> wTasks = taskMapper.listByAssigneeId(w.getId());
+                                long wPending = wTasks.stream().filter(t -> !"DONE".equals(t.getStatus())).count();
+                                // 这里严谨取了 real_name 而不是 username
+                                dataContext.append(w.getRealName()).append("（剩").append(wPending).append("个任务），");
+                            }
+                        } else {
+                            dataContext.append("本区域暂无分配员工，");
+                        }
+                        dataContext.append("\n");
+                    }
+
+                    // 查询具体的未处理异常（非RESOLVED状态），让AI能对症下药
+                    List<com.example.smartfarm.entity.Anomaly> anomalies = anomalyMapper.listByZoneIds(zoneIds);
+                    boolean hasAnomaly = false;
+                    dataContext.append("当前未解决的异常：");
+                    for (com.example.smartfarm.entity.Anomaly a : anomalies) {
+                        if (!"RESOLVED".equals(a.getStatus())) {
+                            hasAnomaly = true;
+                            dataContext.append(a.getDescription()).append("；");
+                        }
+                    }
+                    if (!hasAnomaly) {
+                        dataContext.append("无。");
+                    }
+                    dataContext.append("】\n");
+                } else {
+                    dataContext.append("【当前您的管辖区域暂无数据。】\n");
+                }
+
+            } else if ("WORKER".equals(role)) {
+                // 员工：查他负责的地块和具体待办任务
+                List<Integer> zoneIds = zoneWorkerMapper.listZoneIdsByWorker(userId);
+                if (zoneIds != null && !zoneIds.isEmpty()) {
+                    dataContext.append("【您的干活数据如下：\n负责区域：");
+                    for (Integer zid : zoneIds) {
+                        com.example.smartfarm.entity.Zone z = zoneMapper.getById(zid);
+                        if (z != null) {
+                            dataContext.append(z.getZoneName()).append("（").append(z.getCropName()).append("），");
+                        }
+                    }
+                    dataContext.append("\n");
+
+                    // 查自己的待办任务明细
+                    List<com.example.smartfarm.entity.Task> myTasks = taskMapper.listByAssigneeId(userId);
+                    dataContext.append("您的待办任务：");
+                    boolean hasTask = false;
+                    for (com.example.smartfarm.entity.Task t : myTasks) {
+                        if (!"DONE".equals(t.getStatus())) {
+                            hasTask = true;
+                            dataContext.append(t.getTaskName()).append("（").append(t.getDescription()).append("）；");
+                        }
+                    }
+                    if (!hasTask) {
+                        dataContext.append("目前没活儿。");
+                    }
+                    dataContext.append("】\n");
+                }
+
+            } else if ("ADMIN".equals(role)) {
+                // 管理员：保留全场数据
+                List<com.example.smartfarm.entity.Anomaly> allAnomalies = anomalyMapper.listAll();
+                long pendingAnomalies = allAnomalies.stream().filter(a -> !"RESOLVED".equals(a.getStatus())).count();
+
+                List<com.example.smartfarm.entity.HarvestRecord> allHarvests = harvestRecordMapper.listAll();
+                java.math.BigDecimal totalYield = java.math.BigDecimal.ZERO;
+                for (com.example.smartfarm.entity.HarvestRecord r : allHarvests) {
+                    if (r.getActualWeight() != null) {
+                        totalYield = totalYield.add(r.getActualWeight());
+                    }
+                }
+                dataContext.append("【当前全场全局数据作为参考：全农场未解决异常共 ").append(pendingAnomalies)
+                        .append(" 条，历史总产量累计 ").append(totalYield).append(" 公斤。】\n");
+            }
+        } catch (Exception e) {
+            System.err.println("获取AI背景数据失败: " + e.getMessage());
+        }
+
+        // 把真实数据结合强业务逻辑喂给AI
+        if ("MANAGER".equals(role)) {
+            return styleRule + dataContext.toString() +
+                    "你是一名资深的农业生产主管，指导区域负责人管理田间。现在你已经拿到了数据库里实时的地块信息、手下的员工名单（真实姓名）、每个员工现在手里积压的任务数量，以及当前没解决的异常病害。\n" +
+                    "当负责人问你如何调度或安排工作时，你必须根据上面的真实数据来回答，绝不能瞎编。\n" +
+                    "核心调度逻辑：优先把紧急的异常病害指派给手里任务最少的员工去处理；如果有人活儿太多，建议找同区域的其他闲置员工分担。\n" +
+                    "回答一定要说出具体的员工名字、具体的地块名字，让人觉得你真的是在根据农场现状做调度，注重落地执行。";
+
+        } else if ("ADMIN".equals(role)) {
+            return styleRule + dataContext.toString() +
+                    "你是一位现代农场经营管理专家，协助农场管理员进行全局战略统筹。结合提供的总产量和未处理异常总数，提供宏观决策支持。\n" +
+                    "指出可能拖累产量的短板，并提供长效的管理优化建议，以提升农场整体经济效益为核心。";
+
+        } else {
+            return styleRule + dataContext.toString() +
+                    "你是一个经验丰富的老农业技术员，给一线员工提供实操指导。结合上面的员工自己的待办任务和负责区域，指导他该怎么干活。遇到病虫害直接给具体的用药和操作步骤，注重实干。";
         }
     }
 }

@@ -340,12 +340,27 @@ function parseContent(c) {
   if (!c) return '无内容'
   try {
     const obj = JSON.parse(c)
-    const labelMap = { plant_height: '株高', leaf_color: '叶色', growth: '生长状态', remark: '备注', amount: '用量', yield: '总重量', batchNo: '批次' }
+    // 补全了采收等所有相关的中英文对照字典
+    const map = {
+      plant_height: '株高',
+      leaf_color: '叶色',
+      growth: '生长状态',
+      remark: '备注',
+      amount: '用量',
+      batchNo: '批次号',
+      yield: '总产量',
+      gradeA: 'A级果',
+      gradeB: 'B级果',
+      gradeC: 'C级果'
+    }
     return Object.entries(obj)
-        .filter(([, v]) => v !== '' && v !== null && v !== undefined)
-        .map(([k, v]) => `${labelMap[k] || k}：${v}`)
+        .filter(([, v]) => v !== '' && v !== null && v !== undefined) // 过滤掉空值
+        .map(([k, v]) => `${map[k] || k}: ${v}`)
+        .filter(s => !s.endsWith(': ')) // 过滤掉没有值的键
         .join(' · ')
-  } catch (e) { return c }
+  } catch (e) {
+    return c
+  }
 }
 
 const pendingTasks = computed(() => tasks.value.filter(t => t.status === 'PENDING'))
